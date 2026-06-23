@@ -1,0 +1,10 @@
+{
+  "name": "SmartShelf: Retail Supply Chain",
+  "description": "Intelligent inventory system with ML-driven forecasting, perishable goods tracking, and reorder automation for supermarket chains.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -4,6 +4,7 @@ import { Button } from '../components/ui/button';
 import { Store, Lock, Mail, AlertCircle } from 'lucide-react';
 import { auth, googleProvider } from '../lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword } from 'firebase/auth';
+import logoUrl from '../assets/images/smartshelf_logo_1782233833498.jpg';
 
 export function LoginView() {
   const [email, setEmail] = useState('');
@@ -62,8 +63,13 @@ export function LoginView() {
       <div className="absolute bottom-0 left-0 -ml-32 -mb-32 w-96 h-96 rounded-full bg-emerald-700 opacity-20 blur-3xl mix-blend-screen"></div>
 
       <div className="mb-8 text-center flex flex-col items-center relative z-10">
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-4 rounded-2xl mb-4 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-          <Store className="w-10 h-10 text-white" />
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-2 rounded-2xl mb-4 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+          <img 
+            src={logoUrl} 
+            alt="SmartShelf Logo" 
+            referrerPolicy="no-referrer"
+            className="w-16 h-16 rounded-xl object-cover" 
+          />
         </div>
         <h1 className="text-4xl font-black tracking-tight text-white">Smart<span className="text-emerald-500">Shelf</span></h1>
         <p className="text-slate-400 mt-2 font-medium tracking-wide">Premium Grocery Supply Chain</p>

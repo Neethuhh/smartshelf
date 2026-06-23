@@ -1,22 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Package, AlertTriangle, TrendingUp, AlertOctagon } from 'lucide-react';
+import { Package, AlertTriangle, TrendingUp, AlertOctagon, ShoppingCart } from 'lucide-react';
+import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { useStore } from '../context/StoreContext';
+import { RecordSaleModal } from '../components/RecordSaleModal';
 
 export function DashboardView({ onNavigate, userEmail }: { onNavigate?: (view: string) => void, userEmail?: string }) {
-  const { products, inventory, expiryAlerts, reorderAlerts, pendingDeliveries } = useStore();
+  const { products, inventory, expiryAlerts, reorderAlerts, pendingDeliveries, todaySales } = useStore();
+  const [showSaleModal, setShowSaleModal] = useState(false);
   
   const totalValue = inventory.reduce((sum, inv) => {
     const p = products.find(p => p.sku === inv.sku);
     return sum + (p ? p.unitCost * inv.currentStock : 0);
   }, 0);
 
+  const todaySalesRevenue = todaySales.reduce((sum, sale) => sum + sale.revenue, 0);
+
   const criticalExpiry = expiryAlerts.filter(a => a.alertType === 'critical_3days').length;
   const criticalReorder = reorderAlerts.filter(a => a.urgencyLevel === 'critical').length;
 
   return (
     <div className="flex flex-col h-full gap-6">
+      {showSaleModal && <RecordSaleModal onClose={() => setShowSaleModal(false)} />}
+      
       <div className="relative rounded-2xl bg-gradient-to-r from-emerald-800 to-emerald-600 p-8 overflow-hidden shadow-sm">
         {/* Decorative elements for the banner */}
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-emerald-500 opacity-20 blur-3xl"></div>
@@ -27,6 +34,12 @@ export function DashboardView({ onNavigate, userEmail }: { onNavigate?: (view: s
             <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Good morning!</h1>
             <p className="text-emerald-100 font-medium mb-4">Here's your store overview for {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric'})}</p>
             
+            <div className="flex items-center gap-3 mb-4">
+              <Button onClick={() => setShowSaleModal(true)} className="bg-emerald-500 hover:bg-emerald-400 text-white border-none font-semibold flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4" /> Record New Sale
+              </Button>
+            </div>
+
             {pendingDeliveries.length > 0 && (
               <div className="bg-emerald-900/40 rounded-lg p-3 border border-emerald-500/30 backdrop-blur-md max-w-md">
                 <p className="text-xs font-bold text-emerald-200 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -46,11 +59,7 @@ export function DashboardView({ onNavigate, userEmail }: { onNavigate?: (view: s
           <div className="flex bg-white/10 rounded-xl p-4 backdrop-blur-sm border border-white/20">
             <div className="mr-6">
               <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider mb-1">Today's Sales</p>
-              <p className="text-2xl font-bold text-white">₹84,500</p>
-            </div>
-            <div className="mr-6">
-              <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider mb-1">Footfall</p>
-              <p className="text-2xl font-bold text-white">1,204</p>
+              <p className="text-2xl font-bold text-white">₹{todaySalesRevenue.toLocaleString('en-IN')}</p>
             </div>
             <div>
               <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider mb-1">Pending Deliveries</p>

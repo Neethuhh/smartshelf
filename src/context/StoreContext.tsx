@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
-import { PRODUCTS as initialProducts, INVENTORY as initialInventory, EXPIRY_ALERTS as initialExpiryAlerts, REORDER_ALERTS as initialReorderAlerts, FORECAST_DATA as initialForecastData, TODAY_SALES as initialTodaySales, SUPPLIERS as initialSuppliers } from '../data/mockData';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, InventoryItem, ExpiryAlert, ReorderAlert, ForecastData, ProductSale, PendingDelivery, Supplier } from '../types';
+import { auth, db } from '../lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface StoreContextType {
   products: Product[];
@@ -21,19 +23,97 @@ interface StoreContextType {
   addSupplier: (supplier: Supplier) => void;
   updateSupplier: (supplier: Supplier) => void;
   deleteSupplier: (id: string) => void;
+  registerSale: (sku: string, quantity: number) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory);
-  const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>(initialExpiryAlerts);
-  const [reorderAlerts, setReorderAlerts] = useState<ReorderAlert[]>(initialReorderAlerts);
-  const [forecastData] = useState<ForecastData[]>(initialForecastData);
-  const [todaySales] = useState<ProductSale[]>(initialTodaySales);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [expiryAlerts, setExpiryAlerts] = useState<ExpiryAlert[]>([]);
+  const [reorderAlerts, setReorderAlerts] = useState<ReorderAlert[]>([]);
+  const [forecastData, setForecastData] = useState<ForecastData[]>([]);
+  const [todaySales, setTodaySales] = useState<ProductSale[]>([]);
   const [pendingDeliveries, setPendingDeliveries] = useState<PendingDelivery[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUserId(user.uid);
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setProducts(data.products || []);
+            setInventory(data.inventory || []);
+            setExpiryAlerts(data.expiryAlerts || []);
+            setReorderAlerts(data.reorderAlerts || []);
+            setForecastData(data.forecastData || []);
+            setTodaySales(data.todaySales || []);
+            setPendingDeliveries(data.pendingDeliveries || []);
+            setSuppliers(data.suppliers || []);
+          } else {
+            // New user, states are already empty
+            setProducts([]);
+            setInventory([]);
+            setExpiryAlerts([]);
+            setReorderAlerts([]);
+            setForecastData([]);
+            setTodaySales([]);
+            setPendingDeliveries([]);
+            setSuppliers([]);
+          }
+        } catch (error) {
+          console.error("Error loading data:", error);
+        }
+      } else {
+        setUserId(null);
+        setProducts([]);
+        setInventory([]);
+        setExpiryAlerts([]);
+        setReorderAlerts([]);
+        setForecastData([]);
+        setTodaySales([]);
+        setPendingDeliveries([]);
+        setSuppliers([]);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Sync to firestore whenever states change
+  useEffect(() => {
+    if (!userId || loading) return;
+    const syncData = async () => {
+      try {
+        await setDoc(doc(db, 'users', userId), {
+          products,
+          inventory,
+          expiryAlerts,
+          reorderAlerts,
+          forecastData,
+          todaySales,
+          pendingDeliveries,
+          suppliers
+        });
+      } catch (error) {
+        console.error("Error saving data:", error);
+      }
+    };
+    
+    // We debounce slightly to avoid writing on every single state change when they happen together
+    const timeoutId = setTimeout(syncData, 500);
+    return () => clearTimeout(timeoutId);
+  }, [userId, loading, products, inventory, expiryAlerts, reorderAlerts, forecastData, todaySales, pendingDeliveries, suppliers]);
+
 
   const logWastage = (alertId: string) => {
     const alert = expiryAlerts.find(a => a.id === alertId);
@@ -118,6 +198,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSuppliers(prev => prev.filter(s => s.id !== id));
   };
 
+  const registerSale = (sku: string, quantity: number) => {
+    const product = products.find(p => p.sku === sku);
+    if (!product) return;
+
+    const revenue = product.price * quantity;
+    const profit = revenue - (product.unitCost * quantity);
+
+    setTodaySales(prev => {
+      const existing = prev.find(s => s.sku === sku);
+      if (existing) {
+        return prev.map(s => s.sku === sku ? {
+          ...s,
+          qtySold: s.qtySold + quantity,
+          revenue: s.revenue + revenue,
+          profit: s.profit + profit
+        } : s);
+      } else {
+        return [...prev, { sku, qtySold: quantity, revenue, profit }];
+      }
+    });
+
+    updateInventory(sku, -quantity);
+  };
+
   return (
     <StoreContext.Provider value={{
       products,
@@ -137,7 +241,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       deleteProduct,
       addSupplier,
       updateSupplier,
-      deleteSupplier
+      deleteSupplier,
+      registerSale
     }}>
       {children}
     </StoreContext.Provider>

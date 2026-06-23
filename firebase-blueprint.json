@@ -1,0 +1,16 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and store data",
+      "type": "object",
+      "properties": {}
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user specific inventory and sales data"
+    }
+  }
+}

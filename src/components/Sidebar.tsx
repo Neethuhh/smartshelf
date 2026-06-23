@@ -1,6 +1,7 @@
 import React from 'react';
 import { LayoutDashboard, Package, AlertTriangle, TrendingUp, ShoppingCart, FileText, LogOut, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
+import logoUrl from '../assets/images/smartshelf_logo_1782233833498.jpg';
 
 interface SidebarProps {
   currentView: string;
@@ -21,8 +22,13 @@ export function Sidebar({ currentView, onChangeView, onLogout }: SidebarProps) {
   return (
     <div className="flex h-screen w-64 flex-col border-r border-slate-800 bg-slate-950 print:hidden">
       <div className="flex h-16 items-center px-6 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-emerald-500 rounded-md shadow-[0_0_15px_rgba(16,185,129,0.5)]"></div>
+        <div className="flex items-center gap-3">
+          <img 
+            src={logoUrl} 
+            alt="SmartShelf Logo" 
+            referrerPolicy="no-referrer"
+            className="w-8 h-8 rounded-md shadow-[0_0_15px_rgba(16,185,129,0.5)] object-cover" 
+          />
           <span className="text-xl font-bold tracking-tight text-white uppercase flex items-center">
             Smart<span className="text-emerald-500">Shelf</span>
           </span>

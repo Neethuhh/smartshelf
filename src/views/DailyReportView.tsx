@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Printer } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 export function DailyReportView() {
@@ -10,12 +11,23 @@ export function DailyReportView() {
   const totalItems = todaySales.reduce((sum, item) => sum + item.qtySold, 0);
   const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="flex flex-col h-full print:bg-white print:text-black print:p-0">
       <div className="flex items-center justify-between mb-6 print:hidden">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 uppercase">Daily Sales Statistics</h1>
         </div>
+        <button 
+          onClick={handlePrint}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm font-medium transition-colors"
+        >
+          <Printer size={16} />
+          Print Report
+        </button>
       </div>
 
       {/* Printable Area Starts Here */}
